@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout KernelSU
-        uses: actions/checkout@v7
+        uses: actions/checkout@v4
         with:
           path: KernelSU
 
@@ -25,12 +25,12 @@ jobs:
           chmod a+x "$HOME/bin/repo"
           echo "$HOME/bin" >> "$GITHUB_PATH"
 
-      - name: Sync android13-5.10 2022-08 kernel source
+      - name: Sync android13-5.10 2022-04 kernel source
         run: |
           mkdir -p kernel_ws
           cd kernel_ws
           repo init -u https://android.googlesource.com/kernel/manifest \
-            -b common-android13-5.10-2022-08 \
+            -b common-android13-5.10-2022-04 \
             --depth=1
           repo sync -c -j"$(nproc)" --no-tags --fail-fast
 
@@ -51,7 +51,7 @@ jobs:
           modinfo "$GITHUB_WORKSPACE/out/android13-5.10.107_kernelsu.ko" || true
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
           name: android13-5.10.107-lkm
           path: out/android13-5.10.107_kernelsu.ko
