@@ -26,7 +26,8 @@ jobs:
           echo "$HOME/bin" >> "$GITHUB_PATH"
 
       - name: Restore kernel source cache
-        uses: actions/cache@v4
+        id: restore-kernel-source-cache
+        uses: actions/cache/restore@v4
         with:
           path: |
             kernel_ws/.repo/project-objects
@@ -34,7 +35,8 @@ jobs:
           key: android13-5.10.107-2022-04-repo-v1
 
       - name: Restore GKI build output cache
-        uses: actions/cache@v4
+        id: restore-gki-output-cache
+        uses: actions/cache/restore@v4
         with:
           path: kernel_ws/out
           key: android13-5.10.107-2022-04-out-v1
@@ -56,6 +58,15 @@ jobs:
           PY
           repo sync -c -j"$(nproc)" --no-tags --fail-fast
 
+      - name: Save kernel source cache
+        if: steps.restore-kernel-source-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            kernel_ws/.repo/project-objects
+            kernel_ws/.repo/projects
+          key: android13-5.10.107-2022-04-repo-v1
+
       - name: Build GKI once for module headers
         run: |
           if find "$GITHUB_WORKSPACE/kernel_ws/out" -path '*/include/config/auto.conf' -print -quit | grep -q . \
@@ -65,6 +76,13 @@ jobs:
           fi
           cd kernel_ws
           LTO=thin BUILD_CONFIG=common/build.config.gki.aarch64 build/build.sh
+
+      - name: Save GKI build output cache
+        if: steps.restore-gki-output-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: kernel_ws/out
+          key: android13-5.10.107-2022-04-out-v1
 
       - name: Build KernelSU module against 5.10.107 tree
         run: |
