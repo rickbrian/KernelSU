@@ -1,4 +1,4 @@
-name: Build LKM for android13-5.10.107
+name: Build LKM for bluejay android13 5.10.107
 
 on:
   workflow_dispatch:
@@ -8,6 +8,10 @@ on:
     paths:
       - '.github/workflows/build-lkm-5.10.107.yml'
       - 'kernel/**'
+
+concurrency:
+  group: bluejay-5.10.107-lkm
+  cancel-in-progress: true
 
 jobs:
   build-lkm-5-10-107:
@@ -32,16 +36,16 @@ jobs:
           path: |
             kernel_ws/.repo/project-objects
             kernel_ws/.repo/projects
-          key: android13-5.10.107-2022-04-repo-v1
+          key: bluejay-5.10.107-android13-f0fe4f-repo-v1
 
       - name: Restore GKI build output cache
         id: restore-gki-output-cache
         uses: actions/cache/restore@v4
         with:
           path: kernel_ws/out
-          key: android13-5.10.107-2022-04-out-v1
+          key: bluejay-5.10.107-android13-f0fe4f-out-v1
 
-      - name: Sync android13-5.10 2022-04 kernel source
+      - name: Sync bluejay android13 5.10.107 kernel source
         run: |
           mkdir -p kernel_ws
           cd kernel_ws
@@ -52,11 +56,13 @@ jobs:
           from pathlib import Path
           manifest = Path('.repo/manifests/default.xml')
           text = manifest.read_text()
-          text = text.replace('revision="android13-5.10-2022-04" upstream="android13-5.10-2022-04" dest-branch="android13-5.10-2022-04"',
-                              'revision="deprecated/android13-5.10-2022-04" upstream="deprecated/android13-5.10-2022-04" dest-branch="deprecated/android13-5.10-2022-04"')
-          manifest.write_text(text)
+          old = 'revision="android13-5.10-2022-04" upstream="android13-5.10-2022-04" dest-branch="android13-5.10-2022-04"'
+          new = 'revision="android-gs-bluejay-5.10-android13" upstream="android-gs-bluejay-5.10-android13" dest-branch="android-gs-bluejay-5.10-android13"'
+          if old not in text:
+              raise SystemExit('kernel/common android13-5.10-2022-04 manifest entry not found')
+          manifest.write_text(text.replace(old, new))
           PY
-          repo sync -c -j"$(nproc)" --no-tags --fail-fast
+          repo sync -c -j4 --no-tags --fail-fast --force-sync
 
       - name: Save kernel source cache
         if: steps.restore-kernel-source-cache.outputs.cache-hit != 'true'
@@ -65,7 +71,7 @@ jobs:
           path: |
             kernel_ws/.repo/project-objects
             kernel_ws/.repo/projects
-          key: android13-5.10.107-2022-04-repo-v1
+          key: bluejay-5.10.107-android13-f0fe4f-repo-v1
 
       - name: Build GKI once for module headers
         run: |
@@ -82,9 +88,9 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: kernel_ws/out
-          key: android13-5.10.107-2022-04-out-v1
+          key: bluejay-5.10.107-android13-f0fe4f-out-v1
 
-      - name: Build KernelSU module against 5.10.107 tree
+      - name: Build KernelSU module against bluejay 5.10.107 tree
         run: |
           cd KernelSU/kernel
           KBUILD_OUT="$(find "$GITHUB_WORKSPACE/kernel_ws/out" -path '*/include/config/auto.conf' -print -quit)"
@@ -105,15 +111,16 @@ jobs:
           clang --version
           cp "$KBUILD_OUT/vmlinux" "$GITHUB_WORKSPACE/kernel_ws/common/vmlinux"
           ARCH=arm64 LLVM=1 LLVM_IAS=1 KBUILD_OUTPUT="$KBUILD_OUT" make KDIR="$GITHUB_WORKSPACE/kernel_ws/common" \
+               O="$KBUILD_OUT" \
                ODIR="$GITHUB_WORKSPACE/ksu_out" \
                CONFIG_KSU=m CC=clang
           mkdir -p "$GITHUB_WORKSPACE/out"
-          cp "$GITHUB_WORKSPACE/ksu_out/kernelsu.ko" "$GITHUB_WORKSPACE/out/android13-5.10.107_kernelsu.ko"
-          llvm-strip -d "$GITHUB_WORKSPACE/out/android13-5.10.107_kernelsu.ko" || true
-          modinfo "$GITHUB_WORKSPACE/out/android13-5.10.107_kernelsu.ko" || true
+          cp "$GITHUB_WORKSPACE/ksu_out/kernelsu.ko" "$GITHUB_WORKSPACE/out/bluejay-android13-5.10.107_kernelsu.ko"
+          llvm-strip -d "$GITHUB_WORKSPACE/out/bluejay-android13-5.10.107_kernelsu.ko" || true
+          modinfo "$GITHUB_WORKSPACE/out/bluejay-android13-5.10.107_kernelsu.ko" || true
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: android13-5.10.107-lkm
-          path: out/android13-5.10.107_kernelsu.ko
+          name: bluejay-android13-5.10.107-lkm
+          path: out/bluejay-android13-5.10.107_kernelsu.ko
