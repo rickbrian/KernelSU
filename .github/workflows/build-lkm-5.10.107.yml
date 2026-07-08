@@ -50,7 +50,16 @@ jobs:
       - name: Build KernelSU module against 5.10.107 tree
         run: |
           cd KernelSU/kernel
-          make KDIR="$GITHUB_WORKSPACE/kernel_ws/common" \
+          KBUILD_OUT="$(find "$GITHUB_WORKSPACE/kernel_ws/out" -path '*/include/config/auto.conf' -print -quit)"
+          KBUILD_OUT="${KBUILD_OUT%/include/config/auto.conf}"
+          if [ -z "$KBUILD_OUT" ] || [ ! -f "$KBUILD_OUT/Module.symvers" ]; then
+            echo "Could not find prepared kernel build output" >&2
+            find "$GITHUB_WORKSPACE/kernel_ws" -name auto.conf -o -name Module.symvers -o -name vmlinux
+            exit 1
+          fi
+          echo "Using KBUILD_OUTPUT=$KBUILD_OUT"
+          cp "$KBUILD_OUT/vmlinux" "$GITHUB_WORKSPACE/kernel_ws/common/vmlinux"
+          KBUILD_OUTPUT="$KBUILD_OUT" make KDIR="$GITHUB_WORKSPACE/kernel_ws/common" \
                ODIR="$GITHUB_WORKSPACE/ksu_out" \
                CONFIG_KSU=m CC=clang
           mkdir -p "$GITHUB_WORKSPACE/out"
