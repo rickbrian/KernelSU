@@ -1,5 +1,12 @@
 name: Build LKM for KernelSU
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/build-lkm.yml'
+      - '.github/workflows/ddk-lkm.yml'
+      - 'kernel/**'
   workflow_call:
     inputs:
       ddk_release:
