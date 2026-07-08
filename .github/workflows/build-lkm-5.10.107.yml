@@ -77,8 +77,16 @@ jobs:
             exit 1
           fi
           echo "Using KBUILD_OUTPUT=$KBUILD_OUT"
+          CLANG_BIN="$(find "$GITHUB_WORKSPACE/kernel_ws/prebuilts/clang/host/linux-x86" -path '*/bin/clang' -print -quit)"
+          if [ -z "$CLANG_BIN" ]; then
+            echo "Could not find Android clang prebuilt" >&2
+            find "$GITHUB_WORKSPACE/kernel_ws/prebuilts/clang/host/linux-x86" -maxdepth 4 -type f -name clang
+            exit 1
+          fi
+          export PATH="$(dirname "$CLANG_BIN"):$PATH"
+          clang --version
           cp "$KBUILD_OUT/vmlinux" "$GITHUB_WORKSPACE/kernel_ws/common/vmlinux"
-          KBUILD_OUTPUT="$KBUILD_OUT" make KDIR="$GITHUB_WORKSPACE/kernel_ws/common" \
+          ARCH=arm64 LLVM=1 LLVM_IAS=1 KBUILD_OUTPUT="$KBUILD_OUT" make KDIR="$GITHUB_WORKSPACE/kernel_ws/common" \
                ODIR="$GITHUB_WORKSPACE/ksu_out" \
                CONFIG_KSU=m CC=clang
           mkdir -p "$GITHUB_WORKSPACE/out"
