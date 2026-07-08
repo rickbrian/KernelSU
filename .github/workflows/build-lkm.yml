@@ -12,7 +12,7 @@ on:
       ddk_release:
         description: 'DDK release version'
         required: false
-        default: '20220811'
+        default: '20260313'
         type: string
       expected_size2:
         description: 'Second expected signature size (for PR builds)'
@@ -29,7 +29,7 @@ on:
       ddk_release:
         description: 'DDK release version'
         required: false
-        default: '20220811'
+        default: '20260313'
         type: string
 jobs:
   build-lkm:
@@ -40,6 +40,6 @@ jobs:
     uses: ./.github/workflows/ddk-lkm.yml
     with:
       kmi: ${{ matrix.kmi }}
-      ddk_release: ${{ inputs.ddk_release || '20220811' }}
+      ddk_release: ${{ inputs.ddk_release || '20260313' }}
       expected_size2: ${{ inputs.expected_size2 || '' }}
       expected_hash2: ${{ inputs.expected_hash2 || '' }}

@@ -1,0 +1,57 @@
+name: Build LKM for android13-5.10.107
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/build-lkm-5.10.107.yml'
+      - 'kernel/**'
+
+jobs:
+  build-lkm-5-10-107:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout KernelSU
+        uses: actions/checkout@v7
+        with:
+          path: KernelSU
+
+      - name: Install repo
+        run: |
+          mkdir -p "$HOME/bin"
+          curl -fsSL https://storage.googleapis.com/git-repo-downloads/repo > "$HOME/bin/repo"
+          chmod a+x "$HOME/bin/repo"
+          echo "$HOME/bin" >> "$GITHUB_PATH"
+
+      - name: Sync android13-5.10 2022-08 kernel source
+        run: |
+          mkdir -p kernel_ws
+          cd kernel_ws
+          repo init -u https://android.googlesource.com/kernel/manifest \
+            -b common-android13-5.10-2022-08 \
+            --depth=1
+          repo sync -c -j"$(nproc)" --no-tags --fail-fast
+
+      - name: Build GKI once for module headers
+        run: |
+          cd kernel_ws
+          LTO=thin BUILD_CONFIG=common/build.config.gki.aarch64 build/build.sh
+
+      - name: Build KernelSU module against 5.10.107 tree
+        run: |
+          cd KernelSU/kernel
+          make KDIR="$GITHUB_WORKSPACE/kernel_ws/common" \
+               ODIR="$GITHUB_WORKSPACE/ksu_out" \
+               CONFIG_KSU=m CC=clang
+          mkdir -p "$GITHUB_WORKSPACE/out"
+          cp "$GITHUB_WORKSPACE/ksu_out/kernelsu.ko" "$GITHUB_WORKSPACE/out/android13-5.10.107_kernelsu.ko"
+          llvm-strip -d "$GITHUB_WORKSPACE/out/android13-5.10.107_kernelsu.ko" || true
+          modinfo "$GITHUB_WORKSPACE/out/android13-5.10.107_kernelsu.ko" || true
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: android13-5.10.107-lkm
+          path: out/android13-5.10.107_kernelsu.ko
