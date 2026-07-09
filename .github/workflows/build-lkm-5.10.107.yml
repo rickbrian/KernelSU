@@ -36,32 +36,22 @@ jobs:
           path: |
             kernel_ws/.repo/project-objects
             kernel_ws/.repo/projects
-          key: bluejay-5.10.107-android13-f0fe4f-repo-v1
+          key: bluejay-5.10.107-android13-f0fe4f-repo-v2
 
       - name: Restore GKI build output cache
         id: restore-gki-output-cache
         uses: actions/cache/restore@v4
         with:
           path: kernel_ws/out
-          key: bluejay-5.10.107-android13-f0fe4f-out-v1
+          key: bluejay-5.10.107-android13-f0fe4f-out-v2
 
       - name: Sync bluejay android13 5.10.107 kernel source
         run: |
           mkdir -p kernel_ws
           cd kernel_ws
           repo init -u https://android.googlesource.com/kernel/manifest \
-            -b common-android13-5.10-2022-04 \
+            -b android-gs-bluejay-5.10-android13 \
             --depth=1
-          python3 - <<'PY'
-          from pathlib import Path
-          manifest = Path('.repo/manifests/default.xml')
-          text = manifest.read_text()
-          old = 'revision="android13-5.10-2022-04" upstream="android13-5.10-2022-04" dest-branch="android13-5.10-2022-04"'
-          new = 'revision="android-gs-bluejay-5.10-android13" upstream="android-gs-bluejay-5.10-android13" dest-branch="android-gs-bluejay-5.10-android13"'
-          if old not in text:
-              raise SystemExit('kernel/common android13-5.10-2022-04 manifest entry not found')
-          manifest.write_text(text.replace(old, new))
-          PY
           repo sync -c -j4 --no-tags --fail-fast --force-sync
 
       - name: Save kernel source cache
@@ -71,7 +61,7 @@ jobs:
           path: |
             kernel_ws/.repo/project-objects
             kernel_ws/.repo/projects
-          key: bluejay-5.10.107-android13-f0fe4f-repo-v1
+          key: bluejay-5.10.107-android13-f0fe4f-repo-v2
 
       - name: Build GKI once for module headers
         run: |
@@ -81,14 +71,14 @@ jobs:
             exit 0
           fi
           cd kernel_ws
-          LTO=thin BUILD_CONFIG=common/build.config.gki.aarch64 build/build.sh
+          LTO=thin BUILD_CONFIG=aosp/build.config.gki.aarch64 build/build.sh
 
       - name: Save GKI build output cache
         if: steps.restore-gki-output-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
           path: kernel_ws/out
-          key: bluejay-5.10.107-android13-f0fe4f-out-v1
+          key: bluejay-5.10.107-android13-f0fe4f-out-v2
 
       - name: Build KernelSU module against bluejay 5.10.107 tree
         run: |
@@ -109,8 +99,8 @@ jobs:
           fi
           export PATH="$(dirname "$CLANG_BIN"):$PATH"
           clang --version
-          cp "$KBUILD_OUT/vmlinux" "$GITHUB_WORKSPACE/kernel_ws/common/vmlinux"
-          ARCH=arm64 LLVM=1 LLVM_IAS=1 KBUILD_OUTPUT="$KBUILD_OUT" make KDIR="$GITHUB_WORKSPACE/kernel_ws/common" \
+          cp "$KBUILD_OUT/vmlinux" "$GITHUB_WORKSPACE/kernel_ws/aosp/vmlinux"
+          ARCH=arm64 LLVM=1 LLVM_IAS=1 KBUILD_OUTPUT="$KBUILD_OUT" make KDIR="$GITHUB_WORKSPACE/kernel_ws/aosp" \
                O="$KBUILD_OUT" \
                ODIR="$GITHUB_WORKSPACE/ksu_out" \
                CONFIG_KSU=m CC=clang
