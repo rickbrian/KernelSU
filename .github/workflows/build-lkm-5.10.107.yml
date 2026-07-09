@@ -100,9 +100,12 @@ jobs:
           export PATH="$(dirname "$CLANG_BIN"):$PATH"
           clang --version
           cp "$KBUILD_OUT/vmlinux" "$GITHUB_WORKSPACE/kernel_ws/aosp/vmlinux"
-          ARCH=arm64 LLVM=1 LLVM_IAS=1 KBUILD_MODPOST_WARN=1 KBUILD_OUTPUT="$KBUILD_OUT" make KDIR="$GITHUB_WORKSPACE/kernel_ws/aosp" \
+          ARCH=arm64 LLVM=1 LLVM_IAS=1 KBUILD_MODPOST_WARN=1 make -C "$GITHUB_WORKSPACE/kernel_ws/aosp" \
                O="$KBUILD_OUT" \
-               CONFIG_KSU=m CC=clang
+               M="$GITHUB_WORKSPACE/KernelSU/kernel" \
+               CONFIG_KSU=m CC=clang modules
+          clang tools/check_symbol.c -o check_symbol
+          ./check_symbol kernelsu.ko "$GITHUB_WORKSPACE/kernel_ws/aosp/vmlinux" || true
           mkdir -p "$GITHUB_WORKSPACE/out"
           cp kernelsu.ko "$GITHUB_WORKSPACE/out/bluejay-android13-5.10.107_kernelsu.ko"
           llvm-strip -d "$GITHUB_WORKSPACE/out/bluejay-android13-5.10.107_kernelsu.ko" || true
