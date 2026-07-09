@@ -100,7 +100,7 @@ jobs:
           export PATH="$(dirname "$CLANG_BIN"):$PATH"
           clang --version
           cp "$KBUILD_OUT/vmlinux" "$GITHUB_WORKSPACE/kernel_ws/aosp/vmlinux"
-          ARCH=arm64 LLVM=1 LLVM_IAS=1 KBUILD_OUTPUT="$KBUILD_OUT" make KDIR="$GITHUB_WORKSPACE/kernel_ws/aosp" \
+          ARCH=arm64 LLVM=1 LLVM_IAS=1 KBUILD_MODPOST_WARN=1 KBUILD_OUTPUT="$KBUILD_OUT" make KDIR="$GITHUB_WORKSPACE/kernel_ws/aosp" \
                O="$KBUILD_OUT" \
                CONFIG_KSU=m CC=clang
           mkdir -p "$GITHUB_WORKSPACE/out"
