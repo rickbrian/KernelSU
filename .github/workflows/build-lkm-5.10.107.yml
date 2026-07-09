@@ -102,10 +102,9 @@ jobs:
           cp "$KBUILD_OUT/vmlinux" "$GITHUB_WORKSPACE/kernel_ws/aosp/vmlinux"
           ARCH=arm64 LLVM=1 LLVM_IAS=1 KBUILD_OUTPUT="$KBUILD_OUT" make KDIR="$GITHUB_WORKSPACE/kernel_ws/aosp" \
                O="$KBUILD_OUT" \
-               ODIR="$GITHUB_WORKSPACE/ksu_out" \
                CONFIG_KSU=m CC=clang
           mkdir -p "$GITHUB_WORKSPACE/out"
-          cp "$GITHUB_WORKSPACE/ksu_out/kernelsu.ko" "$GITHUB_WORKSPACE/out/bluejay-android13-5.10.107_kernelsu.ko"
+          cp kernelsu.ko "$GITHUB_WORKSPACE/out/bluejay-android13-5.10.107_kernelsu.ko"
           llvm-strip -d "$GITHUB_WORKSPACE/out/bluejay-android13-5.10.107_kernelsu.ko" || true
           modinfo "$GITHUB_WORKSPACE/out/bluejay-android13-5.10.107_kernelsu.ko" || true
 
